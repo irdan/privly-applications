@@ -214,7 +214,9 @@ The keys verified by the RV are then stored locally.
 * * *
 
 
-# The Persona Fallback Verifier
+# Appendix
+
+## The Persona Fallback Verifier
 
 Architecturally Persona is built such that verification is performed by a
 remote service.  It is the intention of the persona team to incorporate this
@@ -222,7 +224,7 @@ natively into the browser. At the time of this writing this is not the case so
 we are unable to remove this from the protocol. As the system matures we will
 look to incorporate natively into the extension if it is not in the browser.
 
-# The Persona Fallback IdP
+## The Persona Fallback IdP
 
 What if a user's email provider doesn't support Persona? In that case, the
 provisioning step would fail. By convention, the user's browser handles this by
