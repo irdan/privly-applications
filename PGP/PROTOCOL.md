@@ -1,8 +1,8 @@
 # Outline and Purpose
 
-The Privly PGP keymanager app is built on top of Mozilla Persona for key
+The Privly PGP application is built on top of Mozilla Persona for key
 sharing. This page describes how the Privly PGP app uses Persona for identity
-certificates and public key discovery at a high level.
+verification and public key exchange at a high level.
 
 Mozilla's Persona allows users to log into supporting websites using identities
 signed by an email domain provider. Anyone with a domain can choose
