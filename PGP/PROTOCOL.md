@@ -16,6 +16,10 @@ PGP key, and enable authenticated secure sharing of content.
 This document was copied and modified from the original found at:
 <https://developer.mozilla.org/en-US/Persona/Protocol_Overview>
 
+
+* * *
+
+
 # Actors
 
 The protocol involves five actors:
@@ -38,6 +42,10 @@ Persona, even one with a specific domain that isn't an IdP itself.
 
 This extension to Persona uses, unmodified, the existing infrastructure for
 IdPs and remote verifiers.
+
+
+* * *
+
 
 # Protocol Steps
 
@@ -126,6 +134,10 @@ the purposes of ensuring that it is not storing junk data. After the RU
 downloads a Backed Identity Assertion from the DP, it performs a verification
 before trusting the assertion.
 
+
+* * *
+
+
 ## Privly Assertion Generation
 
 Now, a Privly keypair is generated. The browser extension has access to the
@@ -197,6 +209,10 @@ are not expired are sent to the RV for verification.
 
 ## RU stores key if verified
 The keys verified by the RV are then stored locally.
+
+
+* * *
+
 
 # The Persona Fallback Verifier
 
