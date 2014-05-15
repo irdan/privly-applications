@@ -124,9 +124,9 @@ In order to prove ownership of a private key, the user's browser creates and
 signs a new document called a "persona identity assertion." It contains:
 
 *  The origin (scheme, domain, and port) of the DP that the user wants to sign
-  into.  
+   into.
 *  An expiration time for the assertion, generally less than five minutes
-  after it was created.
+   after it was created.
 
 The browser then presents both the User Certificate and the Identity Assertion
 to the DP for verification.  Note that the DP performs a verification only for
