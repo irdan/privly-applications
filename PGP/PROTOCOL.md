@@ -14,7 +14,7 @@ Persona identity servers to verify an email address, associate it with a
 PGP key, and enable authenticated secure sharing of content.
 
 This document was copied and modified from the original found at:
-https://developer.mozilla.org/en-US/Persona/Protocol_Overview
+<https://developer.mozilla.org/en-US/Persona/Protocol_Overview>
 
 # Actors
 
