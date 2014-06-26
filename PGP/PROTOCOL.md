@@ -17,113 +17,12 @@ Our application builds on top of the Persona protocol by associating
 existing Persona identities with PGP public keys to enable authenticated
 and confidential sharing of content.
 
-A majority of this document was copied and modified from the original
-found at:
+The BrowserID protocol document should be read over, before continuing
+as we interface with the BrowserID protocol and adhear to the same
+terminology used by that document as much as possible.
+
+An overview of the BrowserID protocol document can be found at:
 <https://developer.mozilla.org/en-US/Persona/Protocol_Overview>
-
-
-# Persona Actors
-
-The Persona protocol involves three actors:
-
-*  Users: The actual people that want to sign into websites using
-          Persona.
-*  Relying Parties (RPs): Websites that want to let users sign in using
-                          Persona.
-*  Identity Providers (IdPs): Domains that can issue Persona-compatible
-                              identity certificates to their users.
-
-Persona and the BrowserID protocol use email addresses as identities, so it's
-natural for email providers to become IdPs.
-
-Mozilla operates a fallback IdP so that users can use any email address with
-Persona, even one with a specific domain that isn't an IdP itself.
-
-
-# Protocol Steps
-
-There are three distinct steps in the Persona protocol:
-
-1. User Certificate Provisioning
-1. Assertion Generation
-1. Assertion Verification
-
-As a prerequisite, the user should have an identity (email address) that
-they wish to use when logging in to websites. The protocol does not
-require that IdP-backed identities are SMTP-routable, but it does
-require that identities follow the user@domain format.
-
-
-## User Certificate Provisioning
-
-In order to upload their identity assertion and public key to the DP, a
-user must be able to prove ownership of their preferred email address.  The
-foundation of this proof is a cryptographically signed certificate from an IdP
-certifying the connection between a browser's user and a given identity within
-the IdP's domain.
-
-Because Persona uses standard public key cryptography techniques, the user
-certificate is signed by the IdP's private key and contains:
-
-*  The user's email address.
-*  The time that the certificate was issued.
-*  The time that the certificate expires.
-*  The IdP's domain name.
-*  The user's Persona public key.
-
-The user's browser generates a different Persona keypair for each of the user's
-email addresses, and these keypairs are not shared across browsers.  Thus, a
-user must obtain a fresh certificate whenever one expires, or whenever using a
-new browser or computer.
-
-When the Persona public key expires or a user generates a new one, the
-extension attempts to obtain a new user certificate from the domain
-associated with the chosen identity.
-
-1.  The browser fetches the /.well-known/browserid support document over SSL
-    from the identity's domain.
-1.  Using information from the support document, the browser passes the user's
-    email address to the IdP and requests a signed certificate.
-1.  If necessary, the user is asked to sign into the IdP before provisioning
-    proceeds.
-1.  The IdP creates, signs, and returns the user certificate to the browser.
-
-
-## Persona Assertion Generation
-
-The user certificate establishes a verifiable link between an email address and
-a public key. However, this is alone not enough to log into a website: the user
-still has to show their connection to the certificate by proving ownership of
-the persona private key.
-
-In order to prove ownership of a private key, the user's browser creates and
-signs a new document called a "persona identity assertion." It contains:
-
-*  The origin (scheme, domain, and port) of the DP that the user wants to sign
-   into.
-*  An expiration time for the assertion, generally less than five minutes
-   after it was created.
-
-
-## Persona Assertion Verification
-
-The combination of User Certificate and Identity Assertion, refered to
-as a Backed Identity Assertion, is sufficient to confirm a user's identity.
-
-First, the DP checks the domain and expiration time in the assertion. If the
-assertion is expired or intended for a different domain, it's rejected. This
-prevents malicious re-use of assertions.
-
-Second, the DP validates the signature on the assertion with the Persona public
-key inside the user certificate. If the key and signature match, the DP is
-assured that the current user really does possess the key associated with the
-certificate.
-
-Third, the DP fetches the IdP's public key from its /.well-known/browserid
-document and verifies that it matches the signature on the user certificate. If
-it does, then the DP can be certain that the certificate really was issued by
-the domain in question.
-
 
 
 # Privly Protocol Actors
