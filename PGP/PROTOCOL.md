@@ -22,28 +22,22 @@ found at:
 <https://developer.mozilla.org/en-US/Persona/Protocol_Overview>
 
 
-# Actors
+# Persona Actors
 
-The protocol involves five actors:
+The Persona protocol involves three actors:
 
-*  Uploading Users (UUs): People that want to upload their PGP public key and
-           associated identity to a public directory.
-*  Relying Users (RUs): People that want to discover a trusted public key.
-*  Directory Provider (DPs): A key-value store for holding associations between
-           identities and PGP public keys.
+*  Users: The actual people that want to sign into websites using
+          Persona.
+*  Relying Parties (RPs): Websites that want to let users sign in using
+                          Persona.
 *  Identity Providers (IdPs): Domains that can issue Persona-compatible
-           identity certificates to their users.
-*  Remote Verifier (RV): The service that verifies cryptographic assertions of
-           identity.
+                              identity certificates to their users.
 
 Persona and the BrowserID protocol use email addresses as identities, so it's
 natural for email providers to become IdPs.
 
 Mozilla operates a fallback IdP so that users can use any email address with
 Persona, even one with a specific domain that isn't an IdP itself.
-
-The Privly PGP application extensions to Persona use, unmodified, the
-existing infrastructure for IdPs and remote verifiers.
 
 
 # Protocol Steps
@@ -187,10 +181,23 @@ are not expired are sent to the RV for verification.
 The keys verified by the RV are then stored locally.
 
 
+# Privly Protocol Actors
+
+The Privly PGP application involves three actors:
+
+*  Uploading Users (UUs): People that want to upload their PGP public key and
+           associated identity to a public directory.
+*  Relying Users (RUs): People that want to discover a trusted public key.
+*  Directory Provider (DPs): A key-value store for holding associations between
+           identities and PGP public keys.
+*  Remote Verifier (RV): The service that verifies cryptographic assertions of
+           identity.
+
+
 # Privly Protocol Steps
 
-The Privly PGP applications adds two distict steps following the Persona
-protocol:
+The Privly PGP applications extends the BrowserID protocol with
+three distict steps:
 
 1. Logging In
 2. Adding Keys to a local key manager
@@ -200,6 +207,8 @@ Further, the user should be
 okay with publicly disclosing their IdP-backed identity's association
 with a PGP public key.
 
+The Privly PGP application extensions to Persona use, unmodified, the
+existing infrastructure for IdPs and remote verifiers.
 
 ## Logging In
 
