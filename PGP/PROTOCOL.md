@@ -4,18 +4,21 @@ The Privly PGP application allows users to securly communicate with
 verified identites. It is built on top of Mozilla Persona for identity
 verification, and provides a seperate service for public key
 distribution and discovery. This document describes how the Privly PGP
-application builds on top of Persona for public key distribution and discovery.
+application builds on top of Persona for public key distribution and
+discovery.
 
-Mozilla's Persona allows users to log into supporting websites using
-identities signed by an email domain provider. Anyone with a domain can
-choose to sign identities. Those who don't sign identities may allow
-Mozilla to act as a fallback identity provider on the domain.
+Mozilla Persona allows users to log into supporting websites using
+identities signed by an email provider. Any domain that supports email
+can also become and Identity Provider and sign identities. Domain who
+aren't yet Identity Providers may allow Mozilla to act as a fallback
+identity provider on their behalf.
 
-Here we build on top of the Persona protocol such that we associate existing
-Persona identity, as verify email addresses, to PGP public keys.
- and enable authenticated secure sharing of content.
+Our application builds on top of the Persona protocol by associating
+existing Persona identities with PGP public keys to enable authenticated
+and confidential sharing of content.
 
-This document was copied and modified from the original found at:
+A majority of this document was copied and modified from the original
+found at:
 <https://developer.mozilla.org/en-US/Persona/Protocol_Overview>
 
 # Actors
