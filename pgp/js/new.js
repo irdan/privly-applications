@@ -47,6 +47,190 @@ var callbacks = {
   },
 
   /**
+   * Check if user has set a passed in item
+   *
+   * @param {string} option A string representing a localforage key.
+   * @param {function} callback The function to execute after the value of the
+   * option has been acquired. This function should accept as a paremeter the
+   * value of the option that was acquired.
+   * 
+   */
+  assureItemIsSet: function(option,callback){
+    localforage.setDriver('localStorageWrapper',function(){
+      localforage.getItem(option,function(value){
+        if (value == undefined || value == ""){
+          if (option === 'pgp-email'){
+            keyManager.promptUserToSetEmail(function(value){
+              callback(value);
+            });
+          }
+          else if (option === 'pgp-directoryURL'){
+            keyManager.promptUserToSetDirectory(function(value){
+              callback(value);
+            });
+          }
+        } else {
+          callback(value);
+        }
+      });
+    });
+  },
+
+  /**
+   * Check if user has set options
+   *
+   * @param {function} callback The function to execute after all items have
+   * been set.
+   */
+  checkOptionsSet: function(callback){
+    var items = ['pgp-email','pgp-directoryURL'];
+    var set = 0;
+    var check = function(option){
+      callbacks.assureItemIsSet(option,function(value){
+        set += 1;
+        if (set === items.length){
+          callback(true);
+        }
+      });
+    };
+    for (var i = 0; i < items.length; i++){
+      check(items[i]);
+    }
+  },
+
+  /**
+   * Check if user needs to generate new keys
+   */
+  checkForKeyManagement: function() {
+    keyManager.needPersonaKey(function(persona_need){
+      if (persona_need === true){
+        keyManager.promptUserToLogin();
+      }
+      keyManager.needNewKey(function(pgp_need){ 
+          if (pgp_need === true){
+            keyManager.genPGPKeys();
+          }
+      });
+    });
+  },
+
+  /**
+   * Populate autocomplete from from localstorage
+   *
+   * @param {function} callback The function to execute after the list of
+   * contacts has been retrieved. This function should accept an array of
+   * emails as a paremeter.
+   */
+  populateToField: function(callback){
+    localforage.setDriver('localStorageWrapper',function(){
+      localforage.getItem('pgp-my_contacts',function(contacts){
+        var emails = [];
+        for(var email in contacts){
+          if (contacts.hasOwnProperty(email)){
+            emails.push(email);
+          }
+        }
+        callback(emails);
+      });
+    });
+  },
+
+  /**
+   * Modify the text of the missing email notifier and then show it.
+   */
+  inviteFriendNotifier: function(email){
+    var emails = $("#missingEmails").text();
+    var whitespace = /^\s+$/mg;  // entire string is whitespace
+    if (whitespace.exec(emails) != null) {
+      emails = email;
+    } else {
+      var existing = new RegExp("(\\s|^)"+email+"\\b"); 
+      if (existing.exec(emails) === null ){ //already contains the email?
+        emails = $("#missingEmails").text() + ", " + email;
+      }
+    }
+    $("#missingEmails").text(emails);
+    $("#missingEmails").css({
+      "font-size" : "1.1em",
+      "font-weight" : "bold"
+    });
+    $(".dropdown").css({"list-style-type":"none"});
+    $("#invite").click(function(){  // Add email to URLs in dropdown
+      $("#inviteMenu li a").each(function(){
+        var old = $( this ).attr("href");
+        var urlemail = encodeURIComponent(emails);
+        var updated = old.replace(/\[FRIENDS\]/,urlemail);
+        $( this ).attr("href",updated);
+      });
+    });
+    $("#emailInvite").show();
+  },
+
+  /**
+   * Remove an email address from the autoComplete selection 
+   */
+  autoCompleteRemove: function(remove){
+    $(".select2-search-choice div:last").css({
+      "font-size" : "1.1em",
+      "font-weight" : "bold"
+    });
+    $(".select2-search-choice:last").fadeOut(1500,function(){
+      var emails = $("#emailAddresses").select2("val");
+      var updated = [];
+      for (var i = 0; i < emails.length; i++){
+        if (emails[i] !== remove){
+          updated.push(emails[i]);
+        }
+      }
+      $("#emailAddresses").select2("val",updated);
+    });
+  },
+
+  /**
+   * Highlight an email address in the autoComplete selection 
+   */
+  autoCompleteHighlight: function(email){
+    $(".select2-search-choice:last")
+      .css("border","2px solid green")
+      .animate({
+        "border-width":"1px",
+        "border-color":"solid #aaaaaa"
+        },1000);
+  },
+
+  /**
+   * Setup and manage autocomplete form
+   */
+  autoComplete: function(){
+    callbacks.populateToField(function(emails){
+      $("#emailAddresses").select2({
+        placeholder: "Recipients",
+        tags: emails,
+        tokenSeparators: [" ",","]
+      }).on("change",function(change){
+        if (change.added !== undefined){               // tag was added
+          if (emails.indexOf(change.added.id) === -1){ // tag was new
+            var email = change.added.id;
+            // Search Remotely, verify and add to local if found
+            PersonaPGP.findPubKey(email, function(results){
+              if (results === null){ // not found remotely or locally
+                callbacks.inviteFriendNotifier(email);
+                callbacks.autoCompleteRemove(email);
+              } else { // Found, update ui somehow?
+                callbacks.autoCompleteHighlight(email);
+                // This branch is taken if email is in the directory but the
+                // returned keys are expired.
+                // TODO: Rewrite findPubKey chain of functions to propagate
+                // errors or provide some sort of feedback of this situation.
+              }
+            });
+          }
+        }
+      });
+    });
+  },
+
+  /**
    * Tell the user they can create their post
    */
   pendingPost: function() {
@@ -58,6 +242,8 @@ var callbacks = {
     $("#save").prop('disabled', false);
     $("#messages").toggle();
     $("#form").toggle();
+
+    callbacks.autoComplete();
   },
 
   /**
@@ -65,17 +251,14 @@ var callbacks = {
    */
   submit: function() {
     var plaintext = $("#content")[0].value;
-    var recipients = $("#emailAddresses")[0].value;
-    // TODO: send message to someone besides yourself
-    // for now using keys already in localforage, ie encrypting message to self
-
-    var emails = recipients.split(',');
+    var emails = $("#emailAddresses").val();
+    emails = emails.split(",");
 
     PersonaPGP.encrypt(emails,plaintext,function(ciphertext){
       var data_to_send = {
         post:{
           structured_content: ciphertext,
-          "privly_application":"pgp",
+          "privly_application":"PGP",
           "public":true,
           "seconds_until_burn": $( "#seconds_until_burn" ).val()
         }
@@ -116,7 +299,7 @@ var callbacks = {
     }
     $("#messages").show();
   }
-}
+};
 
 
 /**
@@ -137,20 +320,20 @@ function initPosting() {
   // Listener for the extension sending initial content
   privlyExtension.initialContent = function(data) {
     $("#content")[0].value = data.initialContent;
-  }
+  };
   
   // Once the message pathway is established, it will immediatly ask for any
   // starting content.
   privlyExtension.messageSecret = function(data) {
     privlyExtension.messageExtension("initialContent", "");
-  }
+  };
   
   // Initialize message pathway to the extension.
   privlyExtension.firePrivlyMessageSecretEvent();
   
   callbacks.pendingLogin();
-  
-}
+  callbacks.checkOptionsSet( callbacks.checkForKeyManagement );
+};
 
 /**
  * Display rendered markdown as a preview of the post.
