@@ -76,6 +76,7 @@
                 to view the content yourself.
               </p>
             </div>
+            {% block messages %}{% endblock %}
           </div>
         </div>
         
