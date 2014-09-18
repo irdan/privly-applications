@@ -55,25 +55,30 @@ var callbacks = {
    * value of the option that was acquired.
    * 
    */
-  assureItemIsSet: function(option,callback){
-    localforage.setDriver('localStorageWrapper',function(){
-      localforage.getItem(option,function(value){
-        if (value == undefined || value == ""){
-          if (option === 'pgp-email'){
-            keyManager.promptUserToSetEmail(function(value){
-              callback(value);
-            });
-          }
-          else if (option === 'pgp-directoryURL'){
-            keyManager.promptUserToSetDirectory(function(value){
-              callback(value);
-            });
-          }
-        } else {
+  assureItemIsSet: function(option, callback){
+    var value = ls.getItem(option);
+    if (value == undefined || value == ""){
+      if (option === 'pgp-email'){
+        keyManager.promptUserToSetEmail(function(value){
           callback(value);
-        }
-      });
-    });
+        });
+      }
+      else if (option === 'pgp-directoryURL'){
+        var default_dirp = "http://dirp.grr.io";
+        ls.setItem(option, default_dirp);
+        callback(default_dirp);
+      }
+    } else if (option === 'pgp-directoryURL'){
+      // Prepend http:// to dirp if needed
+      if (value.indexOf("http://") === -1 &&
+          value.indexOf("https://") === -1){
+        var updated = "http://" + value;
+        ls.setItem(option, updated);
+      }
+      callback(value);
+    } else {
+      callback(value);
+    }
   },
 
   /**
@@ -86,7 +91,7 @@ var callbacks = {
     var items = ['pgp-email','pgp-directoryURL'];
     var set = 0;
     var check = function(option){
-      callbacks.assureItemIsSet(option,function(value){
+      callbacks.assureItemIsSet(option, function(value){
         set += 1;
         if (set === items.length){
           callback(true);
@@ -107,11 +112,26 @@ var callbacks = {
         keyManager.promptUserToLogin();
       }
       keyManager.needNewKey(function(pgp_need){ 
-          if (pgp_need === true){
-            keyManager.genPGPKeys();
-          }
+        if (pgp_need === true){
+          keyManager.genPGPKeys(function(outcome){
+            callbacks.needToUpload();
+          });
+        } else {
+          callbacks.needToUpload();
+        }
       });
     });
+  },
+
+  /**
+   * Assess if a key needs to be uploaded to dirp.  Call notifier if needed.
+   */
+  needToUpload: function(){
+    var payload = ls.getItem('pgp-payload');
+    if (payload !== null ){ // have a stored playload to upload
+      var directoryURL = ls.getItem('pgp-directoryURL');
+      keyManager.notifyConnectivity(directoryURL);
+    }
   },
 
   /**
@@ -122,17 +142,14 @@ var callbacks = {
    * emails as a paremeter.
    */
   populateToField: function(callback){
-    localforage.setDriver('localStorageWrapper',function(){
-      localforage.getItem('pgp-my_contacts',function(contacts){
-        var emails = [];
-        for(var email in contacts){
-          if (contacts.hasOwnProperty(email)){
-            emails.push(email);
-          }
-        }
-        callback(emails);
-      });
-    });
+    var contacts = ls.getItem('pgp-my_contacts');
+    var emails = [];
+    for(var email in contacts){
+      if (contacts.hasOwnProperty(email)){
+        emails.push(email);
+      }
+    }
+    callback(emails);
   },
 
   /**
@@ -159,8 +176,8 @@ var callbacks = {
       $("#inviteMenu li a").each(function(){
         var old = $( this ).attr("href");
         var urlemail = encodeURIComponent(emails);
-        var updated = old.replace(/\[FRIENDS\]/,urlemail);
-        $( this ).attr("href",updated);
+        var updated = old.replace(/\[FRIENDS\]/, urlemail);
+        $( this ).attr("href", updated);
       });
     });
     $("#emailInvite").show();
@@ -174,7 +191,7 @@ var callbacks = {
       "font-size" : "1.1em",
       "font-weight" : "bold"
     });
-    $(".select2-search-choice:last").fadeOut(1500,function(){
+    $(".select2-search-choice:last").fadeOut(1500, function(){
       var emails = $("#emailAddresses").select2("val");
       var updated = [];
       for (var i = 0; i < emails.length; i++){
@@ -182,7 +199,7 @@ var callbacks = {
           updated.push(emails[i]);
         }
       }
-      $("#emailAddresses").select2("val",updated);
+      $("#emailAddresses").select2("val", updated);
     });
   },
 
@@ -195,7 +212,7 @@ var callbacks = {
       .animate({
         "border-width":"1px",
         "border-color":"solid #aaaaaa"
-        },1000);
+        }, 1000);
   },
 
   /**
@@ -207,7 +224,7 @@ var callbacks = {
         placeholder: "Recipients",
         tags: emails,
         tokenSeparators: [" ",","]
-      }).on("change",function(change){
+      }).on("change", function(change){
         if (change.added !== undefined){               // tag was added
           if (emails.indexOf(change.added.id) === -1){ // tag was new
             var email = change.added.id;
@@ -254,7 +271,7 @@ var callbacks = {
     var emails = $("#emailAddresses").val();
     emails = emails.split(",");
 
-    PersonaPGP.encrypt(emails,plaintext,function(ciphertext){
+    PersonaPGP.encrypt(emails, plaintext, function(ciphertext){
       var data_to_send = {
         post:{
           structured_content: ciphertext,
@@ -301,6 +318,11 @@ var callbacks = {
   }
 };
 
+/**
+ * Initialize the application.
+ */
+function initializeApplication() {
+}
 
 /**
  * Get the CSRF token and starting content for the form element. 

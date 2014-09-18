@@ -20,11 +20,28 @@ require('/lib/algs/ds');
 // the RNG is seeded, or you call `jwcrypto.addEntropy` before using
 // functions `sign` or `bundle`.
 
-// TODO: We need to determine how to autoseed jwcrypto
-// before putting this into production without a hardcoded
-// initialization vector.
+// TODO: We need to determine how to autoseed jwcrypto before putting this into
+// production without a hardcoded seed.
+// For more info see: https://github.com/privly/privly-applications/issues/65
 
+/**
+ * The functions of PersonaId
+ *
+ * 1. bundle: Creates the payload to be uploaded to a directory.
+ * 2. sign: Signs an object with a private key.
+ * 3. verify: Checks the signature on the passed in object.
+ * 4. verifyPayload: Extracts the signed pgp key from the payload and verifes
+ *      the signature.
+ * 5. extractPubkey: Extracts the public key from a backed identity assertion.
+ * 6. extractField: Extracts an arbitrary field from a backed identity
+ *      assertion.
+ * 7. extractEmail: Extracts the email from a backed identity assertion.
+ * 8. remotelyVerifyBia: Call out to Persona's remote verifier to check
+ *      validity of the backed identity assertion.
+ * 9. getSecretKeyFromBridge: Extract a secret from the persona-bridge object.
+ **/
 var PersonaId = {
+
   /**
    * Create a payload to send to the directory provider.
    *
@@ -83,9 +100,9 @@ var PersonaId = {
     var bia_pubkey = this.extractPubkey(payload.bia);
     this.verify(payload.pgp, bia_pubkey, function(err, key) {
       if (err == null) {
-        callback(true,key);
+        callback(true, key);
       } else {
-        callback(false,null);
+        callback(false, null);
       }
     });
   },
@@ -143,26 +160,23 @@ var PersonaId = {
    * response from the remote verifier. The function should accept a boolean as
    * a parameter.
    **/
-  remotelyVerifyBia: function(bia,callback){
-    localforage.setDriver('localStorageWrapper',function(){
-      localforage.getItem('pgp-directoryURL',function(audience){
-        audience += ":443";
-        $.post(
-          "https://verifier.login.persona.org/verify",
-          {assertion: bia, audience: audience}
-        ).done(function(response){
-          if (response.status === "okay"){
-            callback(true);
-          } else {
-            console.log("Verification failed because: " + response.reason);
-            callback(false);
-          }
-        }
-        ).fail(function(response) {
-          console.log("Status 200 was not returned from persona verifier");
-          callback(false);
-        });
-      });
+  remotelyVerifyBia: function(bia, callback){
+    var audience = ls.getItem('pgp-directoryURL');
+    audience += ":443";
+    $.post(
+      "https://verifier.login.persona.org/verify",
+      {assertion: bia, audience: audience}
+    ).done(function(response){
+      if (response.status === "okay"){
+        callback(true);
+      } else {
+        console.log("Verification failed because: " + response.reason);
+        callback(false);
+      }
+    }
+    ).fail(function(response) {
+      console.log("Status 200 was not returned from persona verifier");
+      callback(false);
     });
   },
 
@@ -175,8 +189,13 @@ var PersonaId = {
    **/
   getSecretKeyFromBridge: function(bridge, email) {
     var emails = JSON.parse(bridge.emails);
-    if (emails.default[email] == undefined){
-      //console.log("Email does not match persona bridge");
+    try {
+      if (Object.keys(emails).length == undefined || // Empty object
+               emails.default[email] == undefined || // No email key
+               emails.default[email].priv == undefined) { // No Priv Key
+        return null;
+      }
+    } catch(e) {
       return null;
     }
     var priv = emails.default[email].priv;
