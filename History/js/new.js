@@ -255,10 +255,12 @@ function postUrl() {
   Privly.message.messageExtension({privlyUrl: url});
 }
 
-
-document.addEventListener('DOMContentLoaded', function () {
-  // Don't start the script if it is running in a Headless
-  // browser
+/**
+ * Create and start a viewAdapter, provided app is not being run in a headlesss
+ * browser.
+ */
+function historyAppInit () {
+  // Don't start the script if it is running in a Headless browser
   if (!document.getElementById("logout_link")) {
     return;
   }
@@ -271,4 +273,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   
   adapter.start();
-});
+}
+
+document.addEventListener('DOMContentLoaded', historyAppInit);
